@@ -17,7 +17,11 @@
   --------------------------------------------------------------------------- */
   const REPOSITORIO = "";
 
-  const VERSAO = "3.0.0";
+  // Único lugar onde o número da versão existe. Ele aparece no rodapé para
+  // que dê para confirmar, de olho, qual código o navegador está rodando --
+  // sem isso não há como distinguir "a correção não funcionou" de "a
+  // correção não chegou".
+  const VERSAO = "3.1.0";
   const UASG_PADRAO = "120641";
 
   const CLASSE_FASE = {
@@ -62,6 +66,7 @@
     avisos: $("#avisos"),
     avisosLista: $("#avisos-lista"),
     rodapeColeta: $("#rodape-coleta"),
+    rodapeVersao: $("#rodape-versao"),
     gaveta: $("#gaveta"),
     gTitulo: $("#gaveta-titulo"),
     gObjeto: $("#gaveta-objeto"),
@@ -796,6 +801,10 @@
         reg.update();
       } catch (e) { /* sem drama: o site funciona sem isto */ }
     });
+  }
+
+  if (el.rodapeVersao) {
+    el.rodapeVersao.textContent = `Painel de Contratações · v${VERSAO}`;
   }
 
   console.info(`Painel de Contratações v${VERSAO}`);
