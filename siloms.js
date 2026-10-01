@@ -52,6 +52,29 @@
   }
 
   /**
+   * Remove itens repetidos.
+   *
+   * A API devolve o mesmo item mais de uma vez quando ele muda de situação
+   * (um registro "Em andamento" e outro "Homologado", iguais no resto e com
+   * o mesmo id). Era essa a origem das linhas dobradas na planilha.
+   *
+   * A coleta já faz esta limpeza; aqui ela se repete de propósito, para que
+   * um arquivo antigo, coletado antes da correção, não volte a dobrar.
+   */
+  function semRepetidos(itens) {
+    const peso = (s) => {
+      s = String(s || "").trim().toLowerCase();
+      return (!s || s.startsWith("em andamento")) ? 0 : 1;
+    };
+    const melhor = new Map();
+    for (const it of itens || []) {
+      const atual = melhor.get(it.id);
+      if (!atual || peso(it.situacao) > peso(atual.situacao)) melhor.set(it.id, it);
+    }
+    return [...melhor.values()];
+  }
+
+  /**
    * Monta as linhas cruzando itens com seus resultados.
    *
    * opcoes.extras             preenche UND, DESCRIÇÃO e SITUAÇÃO
@@ -60,7 +83,7 @@
    */
   function montar(detalhe, opcoes) {
     const op = opcoes || {};
-    const itens = (detalhe.itens || []).slice();
+    const itens = semRepetidos(detalhe.itens);
     const resultados = detalhe.resultados || [];
 
     const porItem = new Map();
@@ -193,5 +216,6 @@
     return { itens: itens.size, com, sem, valor };
   }
 
-  global.SILOMS = { gerar, montar, nomeArquivo, SEM_RESULTADO, COLUNAS };
+  global.SILOMS = { gerar, montar, nomeArquivo, semRepetidos,
+                    SEM_RESULTADO, COLUNAS };
 })(window);

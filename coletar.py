@@ -66,6 +66,44 @@ def _ler(caminho):
 # RECORTE DOS CAMPOS
 # =============================================================================
 
+def _sem_repetidos(itens):
+    """
+    Remove itens repetidos.
+
+    A API devolve o MESMO item mais de uma vez quando ele muda de situação:
+    um registro "Em andamento" e outro "Homologado", idênticos no resto,
+    com o mesmo idCompraItem. Era isso que fazia a planilha sair com o dobro
+    de linhas -- 82 itens viravam 164.
+
+    Guardamos um registro por idCompraItem, preferindo o de situação mais
+    avançada, que é o que descreve o item como ele ficou.
+    """
+    def peso(it):
+        s = (it.get("situacaoCompraItemNome") or "").strip().lower()
+        return 0 if (not s or s.startswith("em andamento")) else 1
+
+    melhor = {}
+    for it in itens:
+        chave = it.get("idCompraItem")
+        atual = melhor.get(chave)
+        if atual is None or peso(it) > peso(atual):
+            melhor[chave] = it
+    return list(melhor.values())
+
+
+def _resultados_sem_repetidos(res):
+    """Mesma precaução para os resultados, por segurança."""
+    vistos, saida = set(), []
+    for r in res:
+        chave = (r.get("idCompraItem"), r.get("ordemClassificacaoSrp"),
+                 r.get("sequencialResultado"), r.get("niFornecedor"))
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        saida.append(r)
+    return saida
+
+
 def _item_enxuto(it):
     """Só o que o site e a planilha usam."""
     return {
@@ -176,12 +214,17 @@ def coletar(uasg, ano, saida):
     nova = pasta_certames + ".novo"
     shutil.rmtree(nova, ignore_errors=True)
 
+    repetidos = 0
     for c in certames:
-        meus_itens = [_item_enxuto(x) for x in itens_por_compra.get(c["id"], [])]
+        brutos = itens_por_compra.get(c["id"], [])
+        limpos = _sem_repetidos(brutos)
+        repetidos += len(brutos) - len(limpos)
+
+        meus_itens = [_item_enxuto(x) for x in limpos]
         meus_itens.sort(key=lambda x: (_ordem(x["numero"]), x["id"] or ""))
 
-        meus_res = [_resultado_enxuto(x)
-                    for x in resultados_por_compra.get(c["id"], [])]
+        meus_res = [_resultado_enxuto(x) for x in
+                    _resultados_sem_repetidos(resultados_por_compra.get(c["id"], []))]
         meus_res.sort(key=lambda x: (_ordem(x["numero"]),
                                      x["ordem"] or 9999,
                                      x["sequencial"] or 9999))
@@ -204,6 +247,9 @@ def coletar(uasg, ano, saida):
             "itens": meus_itens,
             "resultados": meus_res,
         })
+
+    if repetidos:
+        _log(f"  {repetidos} registro(s) de item repetidos foram descartados")
 
     # troca a pasta inteira de uma vez, para o site nunca ler um estado parcial
     shutil.rmtree(pasta_certames, ignore_errors=True)

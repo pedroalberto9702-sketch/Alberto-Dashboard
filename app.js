@@ -21,10 +21,10 @@
   const UASG_PADRAO = "120641";
 
   const CLASSE_FASE = {
-    "Aguardando abertura": "1",
+    "Aguardando sessão pública": "1",
     "Em disputa": "2",
     "Em habilitação": "3",
-    "Em homologação": "4",
+    "Em homologação/Adjudicação": "4",
     "Homologado": "5",
   };
   const ORDEM_FASES = Object.keys(CLASSE_FASE);
@@ -243,9 +243,9 @@
     el.estado.hidden = true;
     el.painel.hidden = false;
 
-    el.unidade.textContent = d.nome
-      ? `${d.nome} · UASG ${d.uasg}`
-      : `UASG ${d.uasg} · exercício ${d.ano}`;
+    // O nome da unidade é coletado, mas de propósito não vai para a tela: a
+    // página é genérica e não identifica a organização.
+    el.unidade.textContent = `UASG ${d.uasg} · exercício ${d.ano}`;
 
     const resumo = d.resumo || {};
     el.rTotal.textContent = inteiro.format(resumo.total || 0);
@@ -541,7 +541,9 @@
       porItem.get(r.item).push(r);
     }
 
-    let itens = (d.itens || []).slice();
+    // a mesma limpeza da planilha, para a gaveta não listar item repetido
+    let itens = window.SILOMS ? window.SILOMS.semRepetidos(d.itens)
+                              : (d.itens || []).slice();
     if (!itens.length && porItem.size) {
       itens = [...porItem.keys()].map((id) => ({
         id, numero: porItem.get(id)[0].numero,

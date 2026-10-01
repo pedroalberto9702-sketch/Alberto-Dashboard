@@ -53,11 +53,15 @@ MODALIDADES = {
 
 MODALIDADES_PADRAO = (5, 6, 7, 3, 12)
 
+# As fases na ordem em que o certame as percorre, com os nomes usados na
+# seção. "Aguardando sessão pública" cobre o período em que as propostas
+# estão sendo recebidas: o certame já foi publicado, mas a disputa só
+# acontece na data de encerramento.
 FASES = [
-    "Aguardando abertura",
+    "Aguardando sessão pública",
     "Em disputa",
     "Em habilitação",
-    "Em homologação",
+    "Em homologação/Adjudicação",
     "Homologado",
 ]
 
@@ -211,17 +215,21 @@ def fase(compra, hoje=None):
     tem_resultado = bool(compra.get("existeResultado"))
     homologado = float(compra.get("valorTotalHomologado") or 0) > 0
 
-    if abertura and hoje < abertura:
-        nome = "Aguardando abertura"
-    elif abertura and encerramento and abertura <= hoje <= encerramento:
-        nome = "Em disputa"
-    elif encerramento and hoje > encerramento and not tem_resultado:
-        nome = "Em habilitação"
-    elif homologado:
+    # O que já aconteceu manda sobre o calendário: se existe resultado, a fase
+    # é de resultado, mesmo que alguma data esteja estranha na base.
+    if homologado:
         nome = "Homologado"
     elif tem_resultado:
-        nome = "Em homologação"
+        nome = "Em homologação/Adjudicação"
+    elif abertura and hoje < abertura:
+        nome = "Aguardando sessão pública"
+    elif encerramento and hoje < encerramento:
+        # propostas ainda sendo recebidas -- a disputa é só no encerramento
+        nome = "Aguardando sessão pública"
+    elif encerramento and hoje == encerramento:
+        nome = "Em disputa"
     else:
+        # sessão encerrada e nada publicado ainda
         nome = "Em habilitação"
 
     return {"nome": nome, "ordem": FASES.index(nome) + 1, "excecao": False}
