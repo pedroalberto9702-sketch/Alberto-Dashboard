@@ -1,5 +1,5 @@
 # =============================================================================
-#  Atualização dos dados
+#  Atualização dos dados  --  versão para repositório sem subpastas
 # =============================================================================
 #  Esta rotina é o coração do projeto. Ela faz as consultas lentas ao
 #  Compras.gov.br longe dos olhos de qualquer usuário e grava o resultado
@@ -8,6 +8,11 @@
 #  Por isso a lentidão da API deixou de ser um problema: aqui existe um
 #  limite de 6 horas por execução, e ninguém está esperando na frente de
 #  uma tela.
+#
+#  Diferença para a versão anterior: os arquivos estão todos na raiz do
+#  repositório, sem as pastas coletor/ e site/. Os caminhos abaixo refletem
+#  isso. Os dados coletados vão para a pasta dados/, que a própria rotina
+#  cria no primeiro commit.
 #
 #  Atenção a um detalhe do GitHub: rotinas agendadas são desativadas
 #  automaticamente em repositórios que ficam cerca de 60 dias sem
@@ -56,10 +61,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: coletor/requirements.txt
+          cache-dependency-path: requirements.txt
 
       - name: Instalar dependências
-        run: pip install -r coletor/requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Coletar
         id: coleta
@@ -67,8 +72,8 @@ jobs:
         env:
           UASGS: ${{ github.event.inputs.uasgs || vars.UASGS || '120641' }}
           ANOS: ${{ github.event.inputs.anos || vars.ANOS || '' }}
-          SAIDA: site/dados
-        run: python coletor/coletar.py
+          SAIDA: dados
+        run: python coletar.py
 
       # O commit acontece mesmo quando a coleta falha em parte: se uma
       # unidade deu certo e outra não, queremos publicar a que deu certo.
@@ -76,7 +81,7 @@ jobs:
         run: |
           git config user.name  "rotina-de-dados"
           git config user.email "actions@github.com"
-          git add site/dados
+          git add dados
           if git diff --cached --quiet; then
             echo "Nada mudou nesta execução."
             exit 0
@@ -99,3 +104,4 @@ jobs:
           echo "A coleta terminou com erro. Os dados anteriores foram mantidos."
           echo "Veja o registro da etapa 'Coletar' acima para o motivo."
           exit 1
+
