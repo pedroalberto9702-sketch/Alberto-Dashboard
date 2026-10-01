@@ -766,10 +766,35 @@
   }
   medirTopo();
 
-  /* ---- instalação como aplicativo ---- */
+  /* ---- instalação como aplicativo, e troca de versão sem susto ----
+     Quando uma versão nova do site é publicada, o service worker novo assume
+     o lugar do antigo e a página recarrega uma única vez sozinha. Sem isto,
+     o navegador podia ficar rodando código velho por tempo indeterminado --
+     foi o que fez uma correção publicada não chegar até a tela. */
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => { /* sem drama */ });
+    window.addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("sw.js");
+
+        let recarregando = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (recarregando) return;        // uma vez só, nunca em laço
+          recarregando = true;
+          location.reload();
+        });
+
+        reg.addEventListener("updatefound", () => {
+          const novo = reg.installing;
+          if (!novo) return;
+          novo.addEventListener("statechange", () => {
+            if (novo.state === "installed" && navigator.serviceWorker.controller) {
+              novo.postMessage("atualizar-agora");
+            }
+          });
+        });
+
+        reg.update();
+      } catch (e) { /* sem drama: o site funciona sem isto */ }
     });
   }
 

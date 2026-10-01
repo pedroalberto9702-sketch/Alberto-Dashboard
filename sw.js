@@ -1,21 +1,23 @@
 /* =============================================================================
    Service worker
    =============================================================================
-   Duas estratégias diferentes, porque as necessidades são diferentes:
+   REDE PRIMEIRO, cache como reserva -- para tudo.
 
-   - A CASCA (html, css, js, ícones) vem do cache primeiro. É o que faz a
-     página abrir instantaneamente, inclusive sem rede.
-   - Os DADOS vêm da rede primeiro, com o cache como reserva. Você sempre vê
-     a coleta mais recente quando há conexão, e a última conhecida quando não
-     há -- útil num celular com sinal ruim.
+   A primeira versão deste arquivo servia o código (html, css, js) do cache
+   primeiro, para a página abrir instantaneamente. O efeito colateral só
+   apareceu na prática: depois de uma correção publicada, o navegador
+   continuava rodando a versão antiga, e a correção simplesmente não chegava.
+   Foi o que aconteceu com a limpeza de itens repetidos -- o arquivo certo
+   estava no servidor, e a planilha continuava saindo dobrada.
 
-   Ao mudar arquivos da casca, suba o número da VERSAO para que os
-   navegadores que já instalaram o painel busquem a versão nova.
+   Num projeto em construção isso é inaceitável, e a troca custa pouco: o
+   site inteiro tem menos de 100 KB atrás de uma CDN, então buscar da rede é
+   questão de milissegundos. O cache continua existindo e continua salvando
+   a página quando não há conexão -- ele só deixou de ter a última palavra.
    ========================================================================== */
 
-const VERSAO = "v3.0.0";
-const CASCA = `casca-${VERSAO}`;
-const DADOS = `dados-${VERSAO}`;
+const VERSAO = "v3.1.0";
+const CACHE = `painel-${VERSAO}`;
 
 const ARQUIVOS = [
   "./",
@@ -30,7 +32,7 @@ const ARQUIVOS = [
 
 self.addEventListener("install", (ev) => {
   ev.waitUntil(
-    caches.open(CASCA)
+    caches.open(CACHE)
       // addAll falha inteiro se um arquivo faltar; individualmente é tolerante
       .then((c) => Promise.allSettled(ARQUIVOS.map((a) => c.add(a))))
       .then(() => self.skipWaiting())
@@ -41,8 +43,7 @@ self.addEventListener("activate", (ev) => {
   ev.waitUntil(
     caches.keys()
       .then((nomes) => Promise.all(
-        nomes.filter((n) => n !== CASCA && n !== DADOS)
-             .map((n) => caches.delete(n))))
+        nomes.filter((n) => n !== CACHE).map((n) => caches.delete(n))))
       .then(() => self.clients.claim())
   );
 });
@@ -54,33 +55,29 @@ self.addEventListener("fetch", (ev) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // CDN e fontes: direto
 
-  // ---- dados: rede primeiro --------------------------------------------
-  if (url.pathname.includes("/dados/")) {
-    ev.respondWith(
-      fetch(req)
-        .then((r) => {
-          if (r.ok) {
-            const copia = r.clone();
-            caches.open(DADOS).then((c) => c.put(req, copia));
-          }
-          return r;
-        })
-        .catch(() => caches.match(req).then((c) => c || Response.error()))
-    );
-    return;
-  }
-
-  // ---- casca: cache primeiro, atualizando por trás ----------------------
   ev.respondWith(
-    caches.match(req).then((guardado) => {
-      const rede = fetch(req).then((r) => {
+    fetch(req)
+      .then((r) => {
         if (r.ok) {
           const copia = r.clone();
-          caches.open(CASCA).then((c) => c.put(req, copia));
+          caches.open(CACHE).then((c) => c.put(req, copia));
         }
         return r;
-      });
-      return guardado || rede;
-    }).catch(() => caches.match("index.html"))
+      })
+      .catch(async () => {
+        const guardado = await caches.match(req);
+        if (guardado) return guardado;
+        // navegação sem rede e sem cópia da rota: devolve a página inicial
+        if (req.mode === "navigate") {
+          const inicial = await caches.match("index.html");
+          if (inicial) return inicial;
+        }
+        return Response.error();
+      })
   );
+});
+
+/* Permite que a página peça a troca imediata, sem esperar outro carregamento. */
+self.addEventListener("message", (ev) => {
+  if (ev.data === "atualizar-agora") self.skipWaiting();
 });
