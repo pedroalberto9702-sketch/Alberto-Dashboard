@@ -1,0 +1,2 @@
+# Esta pasta é preenchida pela rotina agendada (.github/workflows/atualizar.yml).
+# Ela existe aqui apenas para que o Git a mantenha no repositório antes da primeira coleta.
