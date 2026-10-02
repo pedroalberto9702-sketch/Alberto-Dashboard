@@ -21,7 +21,7 @@
   // que dê para confirmar, de olho, qual código o navegador está rodando --
   // sem isso não há como distinguir "a correção não funcionou" de "a
   // correção não chegou".
-  const VERSAO = "3.1.0";
+  const VERSAO = "3.3.0";
   const UASG_PADRAO = "120641";
 
   const CLASSE_FASE = {

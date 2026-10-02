@@ -16,12 +16,16 @@
    a página quando não há conexão -- ele só deixou de ter a última palavra.
    ========================================================================== */
 
-const VERSAO = "v3.1.0";
+const VERSAO = "v3.3.0";
 const CACHE = `painel-${VERSAO}`;
 
 const ARQUIVOS = [
   "./",
   "index.html",
+  "atas.html",
+  "atas.js",
+  "ata.js",
+  "ata-modelo.js",
   "estilo.css",
   "app.js",
   "siloms.js",
