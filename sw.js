@@ -16,7 +16,7 @@
    a página quando não há conexão -- ele só deixou de ter a última palavra.
    ========================================================================== */
 
-const VERSAO = "v3.3.0";
+const VERSAO = "v3.4.0";
 const CACHE = `painel-${VERSAO}`;
 
 const ARQUIVOS = [

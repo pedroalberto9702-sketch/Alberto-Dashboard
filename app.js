@@ -21,7 +21,16 @@
   // que dê para confirmar, de olho, qual código o navegador está rodando --
   // sem isso não há como distinguir "a correção não funcionou" de "a
   // correção não chegou".
-  const VERSAO = "3.3.0";
+  const VERSAO = "3.4.0";
+
+  /** A base devolve o processo ora formatado, ora só com os 17 dígitos. */
+  function processoFormatado(v) {
+    const t = String(v || "").trim();
+    if (/[./-]/.test(t)) return t;
+    const d = t.replace(/\D/g, "");
+    return d.length === 17
+      ? d.replace(/^(\d{5})(\d{6})(\d{4})(\d{2})$/, "$1.$2/$3-$4") : t;
+  }
   const UASG_PADRAO = "120641";
 
   const CLASSE_FASE = {
@@ -401,7 +410,7 @@
     const pedacos = [];
     if (c.abertura) pedacos.push(`abertura ${diaBR(c.abertura)}`);
     else if (c.publicacao) pedacos.push(`publicado ${diaBR(c.publicacao)}`);
-    if (c.processo) pedacos.push(`proc. ${c.processo}`);
+    if (c.processo) pedacos.push(`proc. ${processoFormatado(c.processo)}`);
     if (!pedacos.length) pedacos.push("—");
     for (const p of pedacos) {
       const s = document.createElement("span");

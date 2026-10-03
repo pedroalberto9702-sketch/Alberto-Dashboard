@@ -435,6 +435,6 @@
     return nomes;
   }
 
-  global.ATA = { gerar, gerarZip, vencedores, nomeArquivo,
+  global.ATA = { gerar, gerarZip, processo, vencedores, nomeArquivo,
                  documento, dataPorExtenso, modalidadeCurta };
 })(window);

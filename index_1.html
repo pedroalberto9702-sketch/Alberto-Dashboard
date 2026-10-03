@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Contratações</title>
+<meta name="description" content="Acompanhamento de pregões, dispensas e inexigibilidades a partir dos dados abertos de compras públicas.">
+
+<meta name="theme-color" content="#15527D" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1620" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contratações">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icone-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+
+<body>
+<a class="pular" href="#lista">Ir para a lista</a>
+
+<header class="topo">
+  <div class="topo__faixa">
+    <div class="marca">
+      <span class="marca__sigla" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+      </span>
+      <span class="marca__texto">
+        <strong>Painel de Contratações</strong>
+        <small id="unidade-nome">Dados abertos de compras públicas</small>
+      </span>
+    </div>
+
+    <form class="busca" id="form-unidade" autocomplete="off">
+      <label class="campo">
+        <span>UASG</span>
+        <input id="campo-uasg" inputmode="numeric" pattern="[0-9]*"
+               maxlength="6" placeholder="120641" required>
+      </label>
+      <label class="campo">
+        <span>Ano</span>
+        <select id="campo-ano"></select>
+      </label>
+      <button class="botao botao--primario" type="submit">Abrir</button>
+      <button class="botao" type="button" id="botao-recarregar"
+              title="Buscar a versão mais recente dos dados publicados">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5V5H10"
+                fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Recarregar</span>
+      </button>
+    </form>
+  </div>
+
+  <nav class="abas" aria-label="Páginas do painel">
+    <a href="index.html" aria-current="page"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7.5h6M7 10.5h6M7 13.5h3.5"/></svg>Contratações</a>
+    <a href="atas.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H6A1.5 1.5 0 0 0 4.5 4v12A1.5 1.5 0 0 0 6 17.5h8a1.5 1.5 0 0 0 1.5-1.5V6.5z"/><path d="M11.5 2.5v4h4M7.5 11h5M7.5 14h3"/></svg>Atas de Registro de Preços</a>
+  </nav>
+
+</header>
+
+<main>
+  <div class="selo" id="selo-atualizacao" hidden>
+    <span class="selo__ponto" aria-hidden="true"></span>
+    <span id="selo-texto"></span>
+    <a id="selo-link" href="#" hidden>Forçar nova coleta</a>
+  </div>
+  <!-- ============ estado de carregamento / erro ============ -->
+  <section id="estado" class="estado" aria-live="polite">
+    <p class="estado__texto">Carregando…</p>
+  </section>
+
+  <!-- ============ painel ============ -->
+  <div id="painel" hidden>
+
+    <section class="resumo" aria-label="Resumo do ano">
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Certames</span>
+        <strong class="resumo__valor" id="r-total">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Valor estimado</span>
+        <strong class="resumo__valor" id="r-estimado">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Homologado</span>
+        <strong class="resumo__valor" id="r-homologado">—</strong>
+      </div>
+      <div class="resumo__bloco resumo__bloco--trilha">
+        <span class="resumo__rotulo">Distribuição por situação</span>
+        <div class="trilha" id="trilha" role="img" aria-label="Distribuição dos certames por situação"></div>
+      </div>
+    </section>
+
+    <section class="controles">
+      <div class="fases" id="fases" role="group" aria-label="Filtrar por situação"></div>
+      <label class="procura">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <input id="campo-procura" type="search"
+               placeholder="Número, objeto ou processo" aria-label="Procurar">
+      </label>
+    </section>
+
+    <section id="lista" class="lista" tabindex="-1">
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th scope="col" class="c-certame">Certame</th>
+            <th scope="col" class="c-situacao">Situação</th>
+            <th scope="col" class="c-objeto">Objeto</th>
+            <th scope="col" class="c-itens">Itens</th>
+            <th scope="col" class="c-valor">Valor</th>
+            <th scope="col" class="c-acao"><span class="oculto">Planilha</span></th>
+          </tr>
+        </thead>
+        <tbody id="corpo"></tbody>
+      </table>
+      <p class="vazio" id="vazio" hidden>Nenhum certame corresponde ao filtro.</p>
+    </section>
+
+    <section class="avisos" id="avisos" hidden>
+      <h2>Observações desta coleta</h2>
+      <ul id="avisos-lista"></ul>
+    </section>
+  </div>
+</main>
+
+<footer class="rodape">
+  <p class="rodape__versao"><span id="rodape-versao">Painel</span>
+     · <span id="rodape-coleta"></span></p>
+</footer>
+
+<!-- ============ gaveta de detalhe ============ -->
+<div class="gaveta" id="gaveta" hidden>
+  <div class="gaveta__fundo" data-fechar></div>
+  <aside class="gaveta__painel" role="dialog" aria-modal="true" aria-labelledby="gaveta-titulo">
+    <header class="gaveta__topo">
+      <div>
+        <h2 id="gaveta-titulo">—</h2>
+        <p id="gaveta-objeto" class="gaveta__objeto"></p>
+      </div>
+      <button class="botao botao--icone" type="button" data-fechar aria-label="Fechar">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="gaveta__barra">
+      <label class="interruptor">
+        <input type="checkbox" id="f-sem-vencedor">
+        <span>Só itens sem vencedor</span>
+      </label>
+      <label class="interruptor">
+        <input type="checkbox" id="f-acima">
+        <span>Só acima do estimado</span>
+      </label>
+      <button class="botao botao--primario" type="button" id="gaveta-planilha">
+        Gerar planilha
+      </button>
+    </div>
+
+    <div class="gaveta__corpo" id="gaveta-corpo"></div>
+  </aside>
+</div>
+
+<div class="aviso-flutuante" id="recado" hidden role="status"></div>
+
+<!--
+  A biblioteca que escreve o .xlsx vem de um CDN. Se a rede bloquear o CDN
+  (comum em rede corporativa), o trecho abaixo tenta uma cópia local em
+  vendor/xlsx.full.min.js. Para ter essa reserva, baixe uma vez o arquivo de
+  https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
+  e coloque-o nessa pasta do repositório. Sem nenhum dos dois, o painel
+  continua funcionando; só o botão de planilha avisa que está indisponível.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  if (!window.XLSX) {
+    document.write('<script src="vendor/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<script src="siloms.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

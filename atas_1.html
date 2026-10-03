@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atas de Registro de Preços</title>
+<meta name="description" content="Geração de Atas de Registro de Preços a partir dos resultados homologados dos pregões por registro de preços.">
+
+<meta name="theme-color" content="#15527D" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1620" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contratações">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icone-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+
+<body>
+<a class="pular" href="#lista">Ir para a lista</a>
+
+<header class="topo">
+  <div class="topo__faixa">
+    <div class="marca">
+      <span class="marca__sigla" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+      </span>
+      <span class="marca__texto">
+        <strong>Atas de Registro de Preços</strong>
+        <small id="unidade-nome">—</small>
+      </span>
+    </div>
+
+    <form class="busca" id="form-unidade" autocomplete="off">
+      <label class="campo">
+        <span>UASG</span>
+        <input id="campo-uasg" inputmode="numeric" pattern="[0-9]*"
+               maxlength="6" placeholder="120641" required>
+      </label>
+      <label class="campo">
+        <span>Ano</span>
+        <select id="campo-ano"></select>
+      </label>
+      <button class="botao botao--primario" type="submit">Abrir</button>
+      <button class="botao" type="button" id="botao-recarregar"
+              title="Buscar a versão mais recente dos dados publicados">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5V5H10"
+                fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Recarregar</span>
+      </button>
+    </form>
+  </div>
+
+  <nav class="abas" aria-label="Páginas do painel">
+    <a href="index.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7.5h6M7 10.5h6M7 13.5h3.5"/></svg>Contratações</a>
+    <a href="atas.html" aria-current="page"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H6A1.5 1.5 0 0 0 4.5 4v12A1.5 1.5 0 0 0 6 17.5h8a1.5 1.5 0 0 0 1.5-1.5V6.5z"/><path d="M11.5 2.5v4h4M7.5 11h5M7.5 14h3"/></svg>Atas de Registro de Preços</a>
+  </nav>
+</header>
+
+<main>
+  <section id="estado" class="estado" aria-live="polite">
+    <p class="estado__texto">Carregando…</p>
+  </section>
+
+  <div id="painel" hidden>
+    <section class="resumo" aria-label="Resumo">
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Pregões com resultado</span>
+        <strong class="resumo__valor" id="r-certames">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Fornecedores</span>
+        <strong class="resumo__valor" id="r-fornecedores">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Valor registrado</span>
+        <strong class="resumo__valor" id="r-valor">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Atas numeradas</span>
+        <strong class="resumo__valor" id="r-numeradas">—</strong>
+      </div>
+    </section>
+
+    <section class="controles">
+      <p class="instrucao" id="instrucao">Preencha o DOU do pregão e o nº de cada ata para liberar o download.</p>
+      <label class="procura">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <input id="campo-procura" type="search"
+               placeholder="Número, objeto ou fornecedor" aria-label="Procurar">
+      </label>
+    </section>
+
+    <section id="lista" class="atas" tabindex="-1"></section>
+    <p class="vazio" id="vazio" hidden></p>
+  </div>
+</main>
+
+<footer class="rodape">
+  <p class="rodape__versao"><span id="rodape-versao">Painel</span>
+     · <span id="rodape-coleta"></span></p>
+</footer>
+
+<div class="aviso-flutuante" id="recado" hidden role="status"></div>
+
+<!--
+  pdfmake monta o PDF no navegador. Se a rede bloquear o CDN, baixe uma vez
+  os dois arquivos de
+  https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js  e
+  https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js
+  e coloque-os em vendor/ dentro do repositório.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  if (!window.pdfMake) {
+    document.write('<script src="vendor/pdfmake.min.js"><\/script>');
+    document.write('<script src="vendor/vfs_fonts.js"><\/script>');
+  }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  if (!window.JSZip) {
+    document.write('<script src="vendor/jszip.min.js"><\/script>');
+  }
+</script>
+<script src="siloms.js"></script>
+<script src="ata-modelo.js"></script>
+<script src="ata.js"></script>
+<script src="atas.js"></script>
+</body>
+</html>

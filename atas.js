@@ -18,7 +18,7 @@
 (function () {
   "use strict";
 
-  const VERSAO = "3.3.0";
+  const VERSAO = "3.4.0";
   const UASG_PADRAO = "120641";
 
   const moeda = new Intl.NumberFormat("pt-BR", {
@@ -300,9 +300,9 @@
     caixa.className = "ata";
     caixa.dataset.id = c.id;
 
-    /* --- cabeçalho --- */
-    const topo = document.createElement("div");
-    topo.className = "ata__topo";
+    /* --- uma linha: seta | pregão | objeto | DOU | gerar todas --- */
+    const linha = document.createElement("div");
+    linha.className = "ata__linha";
 
     const seta = document.createElement("button");
     seta.type = "button";
@@ -320,36 +320,37 @@
     const h = document.createElement("h2");
     h.className = "ata__titulo";
     h.textContent = c.titulo;
+    const meta = document.createElement("div");
+    meta.className = "ata__meta";
+    const linhas = [];
+    if (c.processo) linhas.push(`proc. ${window.ATA.processo(c.processo)}`);
+    if (c.qtd_itens) linhas.push(`${inteiro.format(c.qtd_itens)} ${c.qtd_itens === 1 ? "item" : "itens"}`);
+    if (c.valor_resultado) linhas.push(moeda.format(c.valor_resultado));
+    for (const t of linhas) {
+      const sp = document.createElement("span");
+      sp.textContent = t;
+      meta.appendChild(sp);
+    }
+    ident.append(h, meta);
+
     const obj = document.createElement("p");
     obj.className = "ata__objeto";
     obj.textContent = c.objeto || "—";
-    const meta = document.createElement("p");
-    meta.className = "ata__meta";
-    const bits = [];
-    if (c.processo) bits.push(`proc. ${c.processo}`);
-    if (c.qtd_itens) bits.push(`${c.qtd_itens} itens`);
-    if (c.valor_resultado) bits.push(moeda.format(c.valor_resultado));
-    meta.textContent = bits.join("  ·  ");
-    ident.append(h, obj, meta);
+    obj.title = c.objeto || "";   // texto inteiro ao pousar o mouse
 
-    topo.append(seta, ident);
-    caixa.appendChild(topo);
-
-    /* --- linha do DOU + gerar todas --- */
-    const barra = document.createElement("div");
-    barra.className = "ata__barra";
-
+    const dou = document.createElement("div");
+    dou.className = "ata__dou";
     const campoNum = campo("DOU nº", "text", an.douNum, (v) => {
       anotar(c.id, { douNum: v.trim() });
       revalidar(caixa, c);
     });
     campoNum.querySelector("input").inputMode = "numeric";
     campoNum.querySelector("input").style.width = "78px";
-
     const campoData = campo("Data do DOU", "date", an.douData, (v) => {
       anotar(c.id, { douData: v });
       revalidar(caixa, c);
     });
+    dou.append(campoNum, campoData);
 
     const todas = document.createElement("button");
     todas.type = "button";
@@ -357,11 +358,9 @@
     todas.textContent = "Gerar todas";
     todas.addEventListener("click", () => gerarTodas(c, caixa, todas));
 
-    const aviso = document.createElement("span");
-    aviso.className = "ata__aviso";
-
-    barra.append(campoNum, campoData, aviso, todas);
-    caixa.appendChild(barra);
+    linha.append(ident, obj, dou, todas, seta);   // a seta fica depois de 'Gerar todas'
+    caixa.appendChild(linha);
+    caixa.classList.toggle("ata--aberta", estado.abertos.has(c.id));
 
     /* --- corpo (fornecedores) --- */
     const corpo = document.createElement("div");
@@ -376,11 +375,12 @@
 
   function campo(rotulo, tipo, valor, aoMudar) {
     const l = document.createElement("label");
-    l.className = "campo";
+    l.className = "campo campo--linha";
     const s = document.createElement("span");
     s.textContent = rotulo;
     const i = document.createElement("input");
     i.type = tipo;
+    i.dataset.req = "1";          // obrigatório: fica com contorno âmbar até preencher
     i.value = valor || "";
     i.addEventListener("input", () => aoMudar(i.value));
     l.append(s, i);
@@ -393,6 +393,7 @@
     const abrindo = !estado.abertos.has(c.id);
     if (abrindo) estado.abertos.add(c.id); else estado.abertos.delete(c.id);
     seta.setAttribute("aria-expanded", abrindo);
+    caixa.classList.toggle("ata--aberta", abrindo);
     const corpo = caixa.querySelector(".ata__corpo");
     corpo.hidden = !abrindo;
     if (!abrindo) return;
@@ -435,6 +436,15 @@
       corpo.appendChild(p);
       return;
     }
+
+    const cab = document.createElement("div");
+    cab.className = "forn__cab";
+    for (const t of ["Fornecedor", "Itens e valor", "Número da ata"]) {
+      const sp = document.createElement("span");
+      sp.textContent = t;
+      cab.appendChild(sp);
+    }
+    corpo.appendChild(cab);
 
     const an = anotacao(c.id);
     for (const f of info.fornecedores) {
@@ -511,27 +521,27 @@
       b.title = pronto ? "" : "Falta " + pendencias(c, { ni }).join(" e ");
     }
 
+    // contorno âmbar nos campos que ainda faltam
+    for (const i of caixa.querySelectorAll("input[data-req]")) {
+      i.closest(".campo").classList.toggle("campo--falta", !i.value.trim());
+    }
+
     const todas = caixa.querySelector(".ata__todas");
-    const aviso = caixa.querySelector(".ata__aviso");
     if (!info) {
       todas.disabled = true;
       todas.textContent = "Gerar todas";
-      aviso.textContent = douOk ? "Abra para ver os fornecedores"
-                                : "Informe o DOU deste pregão";
+      todas.title = douOk ? "Abra a seta para ver os fornecedores"
+                          : "Falta informar o nº e a data do DOU";
       return;
     }
     const semNumero = info.fornecedores.filter((f) => !(an.atas || {})[f.ni]);
     const pronto = douOk && semNumero.length === 0 && info.fornecedores.length > 0;
     todas.disabled = !pronto;
     todas.textContent = `Gerar todas (${info.fornecedores.length})`;
-    if (pronto) {
-      aviso.textContent = "";
-    } else if (!douOk) {
-      aviso.textContent = "Informe o DOU deste pregão";
-    } else {
-      aviso.textContent = `Falta numerar ${semNumero.length} ata` +
-                          (semNumero.length > 1 ? "s" : "");
-    }
+    todas.title = pronto
+      ? `Baixar as ${info.fornecedores.length} atas em um arquivo ZIP`
+      : !douOk ? "Falta informar o nº e a data do DOU"
+               : `Falta numerar ${semNumero.length} ata${semNumero.length > 1 ? "s" : ""}`;
   }
 
   /* ========================================================================
