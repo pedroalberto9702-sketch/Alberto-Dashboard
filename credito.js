@@ -36,7 +36,7 @@
     bannerZerar: $("#banner-zerar"), bannerManter: $("#banner-manter"),
     tRecebido: $("#t-recebido"), tDisp: $("#t-disponivel"),
     tMov: $("#t-mov"), tAtual: $("#t-atualizado"),
-    procura: $("#campo-procura"), fNd: $("#f-nd"), fFonte: $("#f-fonte"),
+    procura: $("#campo-procura"), fAcao: $("#f-acao"), fNd: $("#f-nd"), fPi: $("#f-pi"),
     fSaldo: $("#f-saldo"),
     carregar: $("#botao-carregar"), arquivo: $("#arquivo"),
     exportar: $("#botao-exportar"), zerar: $("#botao-zerar"),
@@ -388,18 +388,20 @@
       }
       sel.value = [...sel.options].some((o) => o.value === atual) ? atual : "";
     };
+    preencher(el.fAcao, estado.dados.linhas.map((l) => l.acao));
     preencher(el.fNd, estado.dados.linhas.map((l) => l.nd));
-    preencher(el.fFonte, estado.dados.linhas.map((l) => l.fonte));
+    preencher(el.fPi, estado.dados.linhas.map((l) => l.pi));
   }
 
   const semAcento = (t) => String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
   function filtradas() {
     const t = semAcento(el.procura.value.trim());
-    const nd = el.fNd.value, fo = el.fFonte.value, saldo = el.fSaldo.checked;
+    const ac = el.fAcao.value, nd = el.fNd.value, pi = el.fPi.value, saldo = el.fSaldo.checked;
     let lista = estado.dados.linhas.filter((l) => {
       if (nd && l.nd !== nd) return false;
-      if (fo && l.fonte !== fo) return false;
+      if (ac && l.acao !== ac) return false;
+      if (pi && l.pi !== pi) return false;
       if (saldo && !(l.disponivel > 0 || atualizadoDe(l) !== 0)) return false;
       if (t) {
         const alvo = semAcento([l.descricao, l.pi, l.ptres, l.acao, aj(l).nota].join(" "));
@@ -635,7 +637,7 @@
 
   let tBusca;
   el.procura.addEventListener("input", () => { clearTimeout(tBusca); tBusca = setTimeout(desenhar, 140); });
-  for (const e of [el.fNd, el.fFonte, el.fSaldo]) e.addEventListener("change", desenhar);
+  for (const e of [el.fAcao, el.fNd, el.fPi, el.fSaldo]) e.addEventListener("change", desenhar);
 
   el.tabela.querySelector("thead").addEventListener("click", (ev) => {
     const b = ev.target.closest("button[data-ordem]");
