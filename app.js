@@ -21,7 +21,7 @@
   // que dê para confirmar, de olho, qual código o navegador está rodando --
   // sem isso não há como distinguir "a correção não funcionou" de "a
   // correção não chegou".
-  const VERSAO = "3.4.0";
+  const VERSAO = "3.6.0";
 
   /** A base devolve o processo ora formatado, ora só com os 17 dígitos. */
   function processoFormatado(v) {

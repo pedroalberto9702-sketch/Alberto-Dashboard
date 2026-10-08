@@ -18,7 +18,7 @@
 (function () {
   "use strict";
 
-  const VERSAO = "3.4.0";
+  const VERSAO = "3.6.0";
   const UASG_PADRAO = "120641";
 
   const moeda = new Intl.NumberFormat("pt-BR", {

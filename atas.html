@@ -26,7 +26,9 @@
 <header class="topo">
   <div class="topo__faixa">
     <div class="marca">
-      <span class="marca__sigla" aria-hidden="true">PC</span>
+      <span class="marca__sigla" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+      </span>
       <span class="marca__texto">
         <strong>Atas de Registro de Preços</strong>
         <small id="unidade-nome">—</small>
@@ -56,9 +58,10 @@
     </form>
   </div>
 
-  <nav class="abas" aria-label="Seções">
-    <a href="index.html">Contratações</a>
-    <a href="atas.html" aria-current="page">Atas de Registro de Preços</a>
+  <nav class="abas" aria-label="Páginas do painel">
+    <a href="index.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7.5h6M7 10.5h6M7 13.5h3.5"/></svg>Contratações</a>
+    <a href="atas.html" aria-current="page"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H6A1.5 1.5 0 0 0 4.5 4v12A1.5 1.5 0 0 0 6 17.5h8a1.5 1.5 0 0 0 1.5-1.5V6.5z"/><path d="M11.5 2.5v4h4M7.5 11h5M7.5 14h3"/></svg>Atas de Registro de Preços</a>
+    <a href="credito.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="15" height="10.5" rx="2"/><circle cx="10" cy="10.25" r="2.4"/><path d="M5.5 8v.01M14.5 12.5v.01"/></svg>Crédito Disponível</a>
   </nav>
 </header>
 
@@ -70,11 +73,11 @@
   <div id="painel" hidden>
     <section class="resumo" aria-label="Resumo">
       <div class="resumo__bloco">
-        <span class="resumo__rotulo">Pregões SRP com resultado</span>
+        <span class="resumo__rotulo">Pregões com resultado</span>
         <strong class="resumo__valor" id="r-certames">—</strong>
       </div>
       <div class="resumo__bloco">
-        <span class="resumo__rotulo">Fornecedores registrados</span>
+        <span class="resumo__rotulo">Fornecedores</span>
         <strong class="resumo__valor" id="r-fornecedores">—</strong>
       </div>
       <div class="resumo__bloco">
@@ -82,17 +85,13 @@
         <strong class="resumo__valor" id="r-valor">—</strong>
       </div>
       <div class="resumo__bloco">
-        <span class="resumo__rotulo">Atas já numeradas</span>
+        <span class="resumo__rotulo">Atas numeradas</span>
         <strong class="resumo__valor" id="r-numeradas">—</strong>
       </div>
     </section>
 
     <section class="controles">
-      <p class="instrucao" id="instrucao">
-        Informe o DOU do pregão e o número de cada ata. O download só fica
-        disponível depois — são os três campos que não existem em nenhuma
-        base pública.
-      </p>
+      <p class="instrucao" id="instrucao">Preencha o DOU do pregão e o nº de cada ata para liberar o download.</p>
       <label class="procura">
         <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
           <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -109,14 +108,7 @@
 </main>
 
 <footer class="rodape">
-  <p>
-    A ata é montada sobre o modelo da Câmara Nacional de Modelos de Licitações
-    e Contratos da Consultoria-Geral da União (Lei nº 14.133/2021), com os
-    preços homologados publicados nos dados abertos de compras. Confira o
-    documento antes de assinar: a base pública pode divergir do sistema
-    operacional.
-  </p>
-  <p class="rodape__versao"><span id="rodape-versao">Atas</span>
+  <p class="rodape__versao"><span id="rodape-versao">Painel</span>
      · <span id="rodape-coleta"></span></p>
 </footer>
 

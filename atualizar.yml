@@ -1,0 +1,131 @@
+# =============================================================================
+#  Atualização dos dados  --  versão para repositório sem subpastas
+# =============================================================================
+#  Esta rotina é o coração do projeto. Ela faz as consultas lentas ao
+#  Compras.gov.br longe dos olhos de qualquer usuário e grava o resultado
+#  como arquivos no próprio repositório. O site só lê esses arquivos.
+#
+#  Por isso a lentidão da API deixou de ser um problema: aqui existe um
+#  limite de 6 horas por execução, e ninguém está esperando na frente de
+#  uma tela.
+#
+#  Diferença para a versão anterior: os arquivos estão todos na raiz do
+#  repositório, sem as pastas coletor/ e site/. Os caminhos abaixo refletem
+#  isso. Os dados coletados vão para a pasta dados/, que a própria rotina
+#  cria no primeiro commit.
+#
+#  Atenção a um detalhe do GitHub: rotinas agendadas são desativadas
+#  automaticamente em repositórios que ficam cerca de 60 dias sem
+#  movimentação. Se a atualização parar, basta reativar na aba Actions.
+# =============================================================================
+
+name: Atualizar dados
+
+on:
+  schedule:
+    # horários em UTC. Cuiabá é UTC-4, então 13h/18h/23h UTC
+    # correspondem a 09h/14h/19h no seu horário.
+    # 08:10 UTC = 04:10 em Cuiabá: logo depois do e-mail do Tesouro das 3h
+    - cron: "10 8 * * *"
+    - cron: "7 13 * * *"
+    - cron: "7 18 * * *"
+    - cron: "7 23 * * *"
+  workflow_dispatch:
+    inputs:
+      uasgs:
+        description: "UASGs separadas por vírgula"
+        required: false
+        default: "120641"
+      anos:
+        description: "Anos separados por vírgula (vazio = ano atual)"
+        required: false
+        default: ""
+
+# impede que duas execuções gravem no repositório ao mesmo tempo
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar o Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Coletar
+        id: coleta
+        continue-on-error: true
+        env:
+          UASGS: ${{ github.event.inputs.uasgs || vars.UASGS || '120641' }}
+          ANOS: ${{ github.event.inputs.anos || vars.ANOS || '' }}
+          SAIDA: dados
+        run: python coletar.py
+
+      # Crédito disponível: lê a planilha do Tesouro no e-mail, cifra e grava
+      # em dados/credito/. Sem os Secrets abaixo a etapa se ignora sozinha.
+      # Roda mesmo se a coleta do Compras falhou, e vice-versa.
+      - name: Crédito disponível (planilha do e-mail)
+        id: credito
+        if: always()
+        continue-on-error: true
+        env:
+          CREDITO_EMAIL: ${{ secrets.CREDITO_EMAIL }}
+          CREDITO_SENHA_APP: ${{ secrets.CREDITO_SENHA_APP }}
+          CREDITO_SENHA: ${{ secrets.CREDITO_SENHA }}
+          CREDITO_REMETENTE: ${{ vars.CREDITO_REMETENTE }}
+          CREDITO_ASSUNTO: ${{ vars.CREDITO_ASSUNTO }}
+          SAIDA: dados
+        run: python credito.py
+
+      # O commit acontece mesmo quando a coleta falha em parte: se uma
+      # unidade deu certo e outra não, queremos publicar a que deu certo.
+      - name: Publicar os dados
+        run: |
+          git config user.name  "rotina-de-dados"
+          git config user.email "actions@github.com"
+          git add dados
+          if git diff --cached --quiet; then
+            echo "Nada mudou nesta execução."
+            exit 0
+          fi
+          git commit -m "dados: atualização de $(TZ=America/Cuiaba date '+%d/%m/%Y %H:%M')"
+          # a rotina agendada pode concorrer com um commit seu; se o envio
+          # falhar por isso, rebaseia e tenta de novo
+          for tentativa in 1 2 3; do
+            git push && exit 0
+            echo "Envio falhou (tentativa $tentativa); sincronizando..."
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
+            sleep 5
+          done
+          echo "Não foi possível enviar os dados."
+          exit 1
+
+      - name: Repassar falha da coleta
+        if: steps.coleta.outcome == 'failure'
+        run: |
+          echo "A coleta terminou com erro. Os dados anteriores foram mantidos."
+          echo "Veja o registro da etapa 'Coletar' acima para o motivo."
+          exit 1
+
+      - name: Repassar falha do crédito
+        if: steps.credito.outcome == 'failure'
+        run: |
+          echo "A leitura da planilha do e-mail falhou. Dados anteriores mantidos."
+          echo "Veja o registro da etapa 'Crédito disponível' acima."
+          exit 1

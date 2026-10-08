@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Crédito Disponível</title>
+<meta name="description" content="Acompanhamento do crédito disponível com movimentações lançadas à mão.">
+
+<meta name="theme-color" content="#0F2D49" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08121C" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icone-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+
+<body>
+<a class="pular" href="#lista">Ir para a tabela</a>
+
+<header class="topo">
+  <div class="topo__faixa">
+    <div class="marca">
+      <span class="marca__sigla" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+      </span>
+      <span class="marca__texto">
+        <strong>Crédito Disponível</strong>
+        <small id="cred-fonte">Planilha do Tesouro com suas movimentações</small>
+      </span>
+    </div>
+
+    <div class="busca">
+      <button class="botao" type="button" id="botao-recarregar"
+              title="Buscar a versão mais recente publicada">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+          <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 1.5V5H10"
+                fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Recarregar</span>
+      </button>
+    </div>
+  </div>
+
+  <nav class="abas" aria-label="Páginas do painel">
+    <a href="index.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3" width="13" height="14" rx="2"/><path d="M7 7.5h6M7 10.5h6M7 13.5h3.5"/></svg>Contratações</a>
+    <a href="atas.html"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5H6A1.5 1.5 0 0 0 4.5 4v12A1.5 1.5 0 0 0 6 17.5h8a1.5 1.5 0 0 0 1.5-1.5V6.5z"/><path d="M11.5 2.5v4h4M7.5 11h5M7.5 14h3"/></svg>Atas de Registro de Preços</a>
+    <a href="credito.html" aria-current="page"><svg viewBox="0 0 20 20" class="icone" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="15" height="10.5" rx="2"/><circle cx="10" cy="10.25" r="2.4"/><path d="M5.5 8v.01M14.5 12.5v.01"/></svg>Crédito Disponível</a>
+  </nav>
+</header>
+
+<main>
+  <!-- carregando, erro, pedido de senha, ou ainda sem planilha -->
+  <section id="estado" class="estado" aria-live="polite">
+    <p class="estado__texto">Carregando…</p>
+  </section>
+
+  <div id="painel" hidden>
+
+    <section class="cred-banner" id="banner" role="status" hidden>
+      <p id="banner-texto"></p>
+      <div class="cred-banner__acoes">
+        <button class="botao" type="button" id="banner-zerar">Zerar todas</button>
+        <button class="botao" type="button" id="banner-manter">Manter e revisar</button>
+      </div>
+    </section>
+
+    <section class="resumo resumo--quatro" aria-label="Totais">
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Crédito recebido</span>
+        <strong class="resumo__valor" id="t-recebido">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Disponível no Tesouro</span>
+        <strong class="resumo__valor" id="t-disponivel">—</strong>
+      </div>
+      <div class="resumo__bloco">
+        <span class="resumo__rotulo">Suas movimentações</span>
+        <strong class="resumo__valor" id="t-mov">—</strong>
+      </div>
+      <div class="resumo__bloco resumo__bloco--destaque">
+        <span class="resumo__rotulo">Disponível atualizado</span>
+        <strong class="resumo__valor" id="t-atualizado">—</strong>
+      </div>
+    </section>
+
+    <section class="controles">
+      <div class="cred-filtros">
+        <label class="procura">
+          <svg viewBox="0 0 16 16" aria-hidden="true" class="icone">
+            <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <input id="campo-procura" type="search"
+                 placeholder="Descrição, PI, PTRES ou lembrete" aria-label="Procurar">
+        </label>
+        <label class="campo campo--linha">
+          <span>Natureza</span>
+          <select id="f-nd"><option value="">Todas</option></select>
+        </label>
+        <label class="campo campo--linha">
+          <span>Fonte</span>
+          <select id="f-fonte"><option value="">Todas</option></select>
+        </label>
+        <label class="interruptor">
+          <input type="checkbox" id="f-saldo">
+          <span>Só com saldo</span>
+        </label>
+      </div>
+
+      <div class="cred-acoes">
+        <button class="botao" type="button" id="botao-carregar"
+                title="Usar uma planilha deste computador, sem esperar o e-mail">
+          Carregar planilha…
+        </button>
+        <button class="botao" type="button" id="botao-exportar">Exportar planilha</button>
+        <button class="botao" type="button" id="botao-zerar">Zerar movimentações</button>
+        <input type="file" id="arquivo" accept=".xlsx,.xls" hidden>
+      </div>
+    </section>
+
+    <section id="lista" class="cred-lista" tabindex="-1">
+      <div class="cred-rolagem">
+        <table class="cred-tabela" id="tabela">
+          <thead>
+            <tr>
+              <th scope="col" class="c-acao-gov"><button type="button" data-ordem="acao">Ação / PTRES</button></th>
+              <th scope="col" class="c-fonte"><button type="button" data-ordem="fonte">Fonte</button></th>
+              <th scope="col" class="c-pi"><button type="button" data-ordem="pi">Programa de trabalho</button></th>
+              <th scope="col" class="c-nd"><button type="button" data-ordem="nd">ND</button></th>
+              <th scope="col" class="c-num"><button type="button" data-ordem="recebido">Recebido</button></th>
+              <th scope="col" class="c-num"><button type="button" data-ordem="disponivel">Disponível (Tesouro)</button></th>
+              <th scope="col" class="c-num"><button type="button" data-ordem="empenhado">Empenhado</button></th>
+              <th scope="col" class="c-meu c-meu--ini c-mov"><button type="button" data-ordem="mov">Movimentação (R$)</button></th>
+              <th scope="col" class="c-meu c-num"><button type="button" data-ordem="atualizado">Disponível atualizado</button></th>
+              <th scope="col" class="c-meu c-nota">Lembrete</th>
+            </tr>
+          </thead>
+          <tbody id="corpo"></tbody>
+          <tfoot id="rodape-tabela"></tfoot>
+        </table>
+      </div>
+      <p class="vazio" id="vazio" hidden>Nenhuma linha corresponde ao filtro.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="rodape">
+  <p class="rodape__versao"><span id="rodape-versao">Crédito Disponível</span></p>
+</footer>
+
+<div class="aviso-flutuante" id="recado" hidden role="status"></div>
+
+<!--
+  A biblioteca que lê e escreve o .xlsx vem de um CDN; se a rede bloquear, o
+  trecho abaixo tenta vendor/xlsx.full.min.js. Sem nenhum dos dois, a tabela
+  continua funcionando; só "Carregar planilha" e "Exportar" avisam.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  if (!window.XLSX) {
+    document.write('<script src="vendor/xlsx.full.min.js"><\/script>');
+  }
+</script>
+<script src="credito.js"></script>
+</body>
+</html>
