@@ -25,6 +25,8 @@ on:
   schedule:
     # horários em UTC. Cuiabá é UTC-4, então 13h/18h/23h UTC
     # correspondem a 09h/14h/19h no seu horário.
+    # 08:10 UTC = 04:10 em Cuiabá: logo depois do e-mail do Tesouro das 3h
+    - cron: "10 8 * * *"
     - cron: "7 13 * * *"
     - cron: "7 18 * * *"
     - cron: "7 23 * * *"
@@ -75,6 +77,22 @@ jobs:
           SAIDA: dados
         run: python coletar.py
 
+      # Crédito disponível: lê a planilha do Tesouro no e-mail, cifra e grava
+      # em dados/credito/. Sem os Secrets abaixo a etapa se ignora sozinha.
+      # Roda mesmo se a coleta do Compras falhou, e vice-versa.
+      - name: Crédito disponível (planilha do e-mail)
+        id: credito
+        if: always()
+        continue-on-error: true
+        env:
+          CREDITO_EMAIL: ${{ secrets.CREDITO_EMAIL }}
+          CREDITO_SENHA_APP: ${{ secrets.CREDITO_SENHA_APP }}
+          CREDITO_SENHA: ${{ secrets.CREDITO_SENHA }}
+          CREDITO_REMETENTE: ${{ vars.CREDITO_REMETENTE }}
+          CREDITO_ASSUNTO: ${{ vars.CREDITO_ASSUNTO }}
+          SAIDA: dados
+        run: python credito.py
+
       # O commit acontece mesmo quando a coleta falha em parte: se uma
       # unidade deu certo e outra não, queremos publicar a que deu certo.
       - name: Publicar os dados
@@ -105,3 +123,9 @@ jobs:
           echo "Veja o registro da etapa 'Coletar' acima para o motivo."
           exit 1
 
+      - name: Repassar falha do crédito
+        if: steps.credito.outcome == 'failure'
+        run: |
+          echo "A leitura da planilha do e-mail falhou. Dados anteriores mantidos."
+          echo "Veja o registro da etapa 'Crédito disponível' acima."
+          exit 1
