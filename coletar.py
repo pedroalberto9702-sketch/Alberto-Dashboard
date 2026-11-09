@@ -215,12 +215,24 @@ def coletar(uasg, ano, saida):
     shutil.rmtree(nova, ignore_errors=True)
 
     repetidos = 0
+    reaproveitados = 0
     for c in certames:
         brutos = itens_por_compra.get(c["id"], [])
         limpos = _sem_repetidos(brutos)
         repetidos += len(brutos) - len(limpos)
 
         meus_itens = [_item_enxuto(x) for x in limpos]
+
+        # A API de itens do governo as vezes falha (HTTP 504) ou perde paginas.
+        # Descricao e unidade quase nunca mudam; entao, o que nao veio agora
+        # e reaproveitado da coleta anterior, em vez de apagar o que ja tinhamos.
+        antigos = (_ler(os.path.join(pasta_certames, f"{c['arquivo']}.json")) or {}).get("itens") or []
+        if antigos:
+            ja = {x["id"] for x in meus_itens}
+            faltando = [x for x in antigos if x.get("id") not in ja]
+            if faltando:
+                meus_itens += faltando
+                reaproveitados += 1
         meus_itens.sort(key=lambda x: (_ordem(x["numero"]), x["id"] or ""))
 
         meus_res = [_resultado_enxuto(x) for x in
@@ -250,6 +262,9 @@ def coletar(uasg, ano, saida):
 
     if repetidos:
         _log(f"  {repetidos} registro(s) de item repetidos foram descartados")
+    if reaproveitados:
+        _log(f"  itens de {reaproveitados} certame(s) reaproveitados da coleta anterior")
+        avisos.append(f"itens: {reaproveitados} certame(s) com itens reaproveitados da coleta anterior")
 
     # troca a pasta inteira de uma vez, para o site nunca ler um estado parcial
     shutil.rmtree(pasta_certames, ignore_errors=True)

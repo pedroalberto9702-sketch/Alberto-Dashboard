@@ -379,9 +379,21 @@
     if (!dados.fornecedor.itens.length) {
       throw new Error(`${dados.fornecedor.nome} não tem itens vencidos neste certame.`);
     }
+    verificarItens(dados.fornecedor);
     const nome = nomeArquivo(dados.numeroAta, dados.fornecedor.nome);
     global.pdfMake.createPdf(documentoPdf(dados)).download(nome);
     return nome;
+  }
+
+  /** Nao deixa sair ata com item sem descricao ou unidade (dado ainda nao coletado). */
+  function verificarItens(fornecedor) {
+    const sem = fornecedor.itens.filter((i) => !String(i.descricao || "").trim() || !String(i.unidade || "").trim());
+    if (!sem.length) return;
+    const nums = sem.slice(0, 8).map((i) => i.numero).join(", ") + (sem.length > 8 ? "…" : "");
+    throw new Error(
+      `${fornecedor.nome}: ${sem.length} item(ns) sem descrição ou unidade (${nums}). ` +
+      "O painel ainda não coletou os itens deste pregão (a base do governo estava fora do ar). " +
+      "Aguarde a próxima atualização e tente de novo.");
   }
 
   function pdfEmBlob(dados) {
@@ -412,6 +424,7 @@
     for (let i = 0; i < lista.length; i++) {
       const d = lista[i];
       if (!d.fornecedor.itens.length) continue;
+      verificarItens(d.fornecedor);
       if (aoProgredir) aoProgredir(i + 1, lista.length, d);
       let nome = nomeArquivo(d.numeroAta, d.fornecedor.nome);
       // dois fornecedores com o mesmo nome/número não podem se sobrescrever
